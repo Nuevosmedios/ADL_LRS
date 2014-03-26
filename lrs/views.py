@@ -14,9 +14,9 @@ from django.template import RequestContext
 from django.utils.decorators import decorator_from_middleware
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
-from lrs import forms, models, exceptions
-from lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator
-from oauth_provider.consts import ACCEPTED, CONSUMER_STATES
+from vendor.xapi.lrs import forms, models, exceptions
+from vendor.xapi.lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator
+from vendor.xapi.oauth_provider.consts import ACCEPTED, CONSUMER_STATES
 
 logger = logging.getLogger(__name__)
  
@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 def home(request):
     context = RequestContext(request)
     context.update(csrf(request))
-
     stats = {}
     stats['usercnt'] = User.objects.all().count()
     stats['stmtcnt'] = models.Statement.objects.all().count()
@@ -82,42 +81,42 @@ def about(request):
                 {
                     "name": "Statements",
                     "methods": ["GET", "POST", "PUT", "HEAD"],
-                    "endpoint": reverse('lrs.views.statements'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.statements'),
                     "description": "Endpoint to submit and retrieve XAPI statments.",
                 },
                 "activities":
                 {
                     "name": "Activities",
                     "methods": ["GET", "HEAD"],
-                    "endpoint": reverse('lrs.views.activities'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.activities'),
                     "description": "Endpoint to retrieve a complete activity object.",
                 },
                 "activities_state":
                 {
                     "name": "Activities State",
                     "methods": ["PUT","POST","GET","DELETE", "HEAD"],
-                    "endpoint": reverse('lrs.views.activity_state'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.activity_state'),
                     "description": "Stores, fetches, or deletes the document specified by the given stateId that exists in the context of the specified activity, agent, and registration (if specified).",
                 },
                 "activities_profile":
                 {
                     "name": "Activities Profile",
                     "methods": ["PUT","POST","GET","DELETE", "HEAD"],
-                    "endpoint": reverse('lrs.views.activity_profile'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.activity_profile'),
                     "description": "Saves/retrieves/deletes the specified profile document in the context of the specified activity.",
                 },
                 "agents":
                 {
                     "name": "Agents",
                     "methods": ["GET", "HEAD"],
-                    "endpoint": reverse('lrs.views.agents'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.agents'),
                     "description": "Returns a special, Person object for a specified agent.",
                 },
                 "agents_profile":
                 {
                     "name": "Agent Profile",
                     "methods": ["PUT","POST","GET","DELETE", "HEAD"],
-                    "endpoint": reverse('lrs.views.agent_profile'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.agent_profile'),
                     "description": "Saves/retrieves/deletes the specified profile document in the context of the specified agent.",
                 }
             },
@@ -126,14 +125,14 @@ def about(request):
                 {
                     "name": "User Registration",
                     "methods": ["POST"],
-                    "endpoint": reverse('lrs.views.register'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.register'),
                     "description": "Registers a user within the LRS.",
                 },
                 "client_register":
                 {
                     "name": "Client Registration",
                     "methods": ["POST"],
-                    "endpoint": reverse('lrs.views.reg_client'),
+                    "endpoint": reverse('vendor.xapi.lrs.views.reg_client'),
                     "description": "Registers a client applicaton with the LRS.",
                 }
             },
@@ -206,7 +205,7 @@ def register(request):
         else:
             return render_to_response('register.html', {"form": form}, context_instance=context)
 
-@login_required(login_url="/XAPI/accounts/login")
+@login_required()
 @require_http_methods(["POST", "GET"])
 def reg_client(request):
     if request.method == 'GET':
@@ -232,14 +231,14 @@ def reg_client(request):
         else:
             return render_to_response('regclient.html', {"form": form}, context_instance=RequestContext(request))
 
-@login_required(login_url="/XAPI/accounts/login")
+@login_required()
 def me(request):
     client_apps = models.Consumer.objects.filter(user=request.user)
     access_tokens = models.Token.objects.filter(user=request.user, token_type=models.Token.ACCESS, is_approved=True)
     return render_to_response('me.html', {'client_apps':client_apps, 'access_tokens':access_tokens},
         context_instance=RequestContext(request))
 
-@login_required(login_url="/XAPI/accounts/login")
+@login_required()
 def my_statements(request):
     if request.method == "DELETE":
         models.Statement.objects.filter(user=request.user).delete()
@@ -286,13 +285,13 @@ def my_statements(request):
 
         s['stmts'] = slist
         if page.has_previous():
-            s['previous'] = "%s?page=%s" % (reverse('lrs.views.my_statements'), page.previous_page_number())
+            s['previous'] = "%s?page=%s" % (reverse('vendor.xapi.lrs.views.my_statements'), page.previous_page_number())
         if page.has_next():
-            s['next'] = "%s?page=%s" % (reverse('lrs.views.my_statements'), page.next_page_number())
+            s['next'] = "%s?page=%s" % (reverse('vendor.xapi.lrs.views.my_statements'), page.next_page_number())
 
         return HttpResponse(json.dumps(s), mimetype="application/json", status=200)
 
-@login_required(login_url="/XAPI/accounts/login")
+@login_required()
 def my_app_status(request):
     try:
         name = request.GET['app_name']
@@ -306,7 +305,7 @@ def my_app_status(request):
     except:
         return HttpResponse(json.dumps({"error_message":"unable to fulfill request"}), mimetype="application/json", status=400)
 
-@login_required(login_url="/XAPI/accounts/login")
+@login_required()
 @require_http_methods(["DELETE"])
 def delete_token(request):
     try:
@@ -329,7 +328,7 @@ def delete_token(request):
 def logout_view(request):
     logout(request)
     # Redirect to a success page.
-    return HttpResponseRedirect(reverse('lrs.views.home'))
+    return HttpResponseRedirect(reverse('vendor.xapi.lrs.views.home'))
 
 # Called when user queries GET statement endpoint and returned list is larger than server limit (10)
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
@@ -480,7 +479,7 @@ def handle_request(request, more_id=None):
     except exceptions.Unauthorized as autherr:
         log_exception(request.path, autherr)
         r = HttpResponse(autherr, status = 401)
-        r['WWW-Authenticate'] = 'Basic realm="ADLLRS"'
+        r['WWW-Authenticate'] = 'Basic realm="KMELXAPI"'
         return r
     except exceptions.OauthUnauthorized as oauth_err:
         log_exception(request.path, oauth_err)

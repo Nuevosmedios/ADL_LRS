@@ -8,13 +8,13 @@ from email.mime.base import MIMEBase
 from django.http import HttpResponse
 from django.conf import settings
 from django.utils.timezone import utc
-from lrs import models
-from lrs.exceptions import IDNotFoundError
-from lrs.objects.ActivityProfileManager import ActivityProfileManager
-from lrs.objects.ActivityStateManager import ActivityStateManager 
-from lrs.objects.AgentManager import AgentManager
-from lrs.objects.AgentProfileManager import AgentProfileManager
-from lrs.objects.StatementManager import StatementManager
+from vendor.xapi.lrs import models
+from vendor.xapi.lrs.exceptions import IDNotFoundError
+from vendor.xapi.lrs.objects.ActivityProfileManager import ActivityProfileManager
+from vendor.xapi.lrs.objects.ActivityStateManager import ActivityStateManager 
+from vendor.xapi.lrs.objects.AgentManager import AgentManager
+from vendor.xapi.lrs.objects.AgentProfileManager import AgentProfileManager
+from vendor.xapi.lrs.objects.StatementManager import StatementManager
 import retrieve_statement
 
 def process_statements(stmts, auth_id, define):

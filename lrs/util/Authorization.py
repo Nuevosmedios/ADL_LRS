@@ -2,10 +2,11 @@ import base64
 from functools import wraps
 from django.conf import settings
 from django.contrib.auth import authenticate
-from lrs.exceptions import Unauthorized, OauthUnauthorized, BadRequest
-from lrs.models import Token, Agent
-from oauth_provider.utils import send_oauth_error
-from oauth_provider.consts import  ACCEPTED
+from vendor.xapi.lrs.exceptions import Unauthorized, OauthUnauthorized, BadRequest
+from vendor.xapi.lrs.models import Token, Agent
+from vendor.xapi.oauth_provider.utils import send_oauth_error
+from vendor.xapi.oauth_provider.consts import  ACCEPTED
+from django.contrib.auth.models import User
 
 # A decorator, that can be used to authenticate some requests at the site.
 def auth(func):
@@ -38,17 +39,21 @@ def auth(func):
 def http_auth_helper(request):
     if request['headers'].has_key('Authorization'):
         auth = request['headers']['Authorization'].split()
-        if len(auth) == 2:
-            if auth[0].lower() == 'basic':
-                # Currently, only basic http auth is used.
-                uname, passwd = base64.b64decode(auth[1]).split(':')
-                user = authenticate(username=uname, password=passwd)
-                if user:
-                    # If the user successfully logged in, then add/overwrite
-                    # the user object of this request.
-                    request['auth']['id'] = user
-                else:
-                    raise Unauthorized("Authorization failed, please verify your username and password")
+        if not request['is_authenticated']:
+            if len(auth) == 2:
+                if auth[0].lower() == 'basic':
+                    # Currently, only basic http auth is used.
+                    uname, passwd = base64.b64decode(auth[1]).split(':')
+                    user = authenticate(username=uname, password=passwd)
+                    if user:
+                        # If the user successfully logged in, then add/overwrite
+                        # the user object of this request.
+                        request['auth']['id'] = user
+                    else:
+                        raise Unauthorized("Authorization failed, please verify your username and password")
+        else:
+            user = User.objects.get(username = request['logged_user'])
+            request['auth']['id'] = user
     else:
         # The username/password combo was incorrect, or not provided.
         raise Unauthorized("Authorization header missing")
