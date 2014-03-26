@@ -6,7 +6,6 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-	url(r'^$', RedirectView.as_view(url='/xAPI/')),
     url(r'^XAPI/', include('lrs.urls')),
     url(r'^xapi/', include('lrs.urls')),
     url(r'^xAPI/', include('lrs.urls')),

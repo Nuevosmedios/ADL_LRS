@@ -1,5 +1,5 @@
 import json
-from lrs.models import Agent
+from vendor.xapi.lrs.models import Agent
 
 class AgentManager():
     def __init__(self, params, define=True):

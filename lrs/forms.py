@@ -3,7 +3,7 @@ from django import forms
 from django.utils.html import conditional_escape
 from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
-from lrs.models import Token
+from vendor.xapi.lrs.models import Token
 
 SCOPES = (('all', 'all'),
           ('all/read', 'all/read'),

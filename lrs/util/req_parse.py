@@ -3,15 +3,15 @@ import email
 import json
 import urllib
 from collections import defaultdict
-from django.http import MultiPartParser
+from django.http import multipartparser
 from django.utils.translation import ugettext as _
 from django.core.cache import get_cache
-from lrs.util import etag, convert_to_dict, convert_post_body_to_dict
-from lrs.util.jws import JWS, JWSException
-from lrs.exceptions import OauthUnauthorized, ParamError, BadRequest
-from oauth_provider.oauth.oauth import OAuthError
-from oauth_provider.utils import send_oauth_error
-from oauth_provider.decorators import CheckOAuth
+from vendor.xapi.lrs.util import etag, convert_to_dict, convert_post_body_to_dict
+from vendor.xapi.lrs.util.jws import JWS, JWSException
+from vendor.xapi.lrs.exceptions import OauthUnauthorized, ParamError, BadRequest
+from vendor.xapi.oauth_provider.oauth.oauth import OAuthError
+from vendor.xapi.oauth_provider.utils import send_oauth_error
+from vendor.xapi.oauth_provider.decorators import CheckOAuth
 
 att_cache = get_cache('attachment_cache')
 
@@ -19,7 +19,9 @@ def parse(request, more_id=None):
     r_dict = {}
     # Build headers from request in request dict
     r_dict['headers'] = get_headers(request.META)
-    
+    r_dict['is_authenticated'] = request.user.is_authenticated()
+    if r_dict['is_authenticated']:
+        r_dict['logged_user'] = request.user.username
     # Traditional authorization should be passed in headers
     r_dict['auth'] = {}
     if 'Authorization' in r_dict['headers']:

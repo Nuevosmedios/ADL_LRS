@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Registraton Success{% endblock title %}
 {% block heading %}Thanks{% endblock heading %}
-{% block content %} 
+{% block body %} 
 <div class="content results">
     {% if info_message %}
         {{info_message|safe}}
@@ -18,6 +18,6 @@
 </div>
 <br/>
 <div>
-    <a class="btn btn-primary" href="{% url lrs.views.home %}">Home</a>
+    <a class="btn btn-primary" href="{% url 'vendor.xapi.lrs.views.home' %}">Home</a>
 </div>
-{% endblock content %}
+{% endblock body %}
