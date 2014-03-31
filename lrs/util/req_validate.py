@@ -5,9 +5,9 @@ from functools import wraps
 from django.utils.timezone import utc
 from django.conf import settings
 from django.core.cache import get_cache
-from lrs import models
-from lrs.util import uri, StatementValidator, validate_uuid, convert_to_dict, get_agent_ifp
-from lrs.exceptions import ParamConflict, ParamError, Forbidden, NotFound, BadRequest, IDNotFoundError
+from vendor.xapi.lrs import models
+from vendor.xapi.lrs.util import uri, StatementValidator, validate_uuid, convert_to_dict, get_agent_ifp
+from vendor.xapi.lrs.exceptions import ParamConflict, ParamError, Forbidden, NotFound, BadRequest, IDNotFoundError
 from Authorization import auth
 
 att_cache = get_cache('attachment_cache')

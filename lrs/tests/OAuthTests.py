@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 from vendor.xapi.lrs import views, models
-from oauth_provider.oauth.oauth import OAuthRequest, OAuthSignatureMethod_HMAC_SHA1
+from vendor.xapi.oauth_provider.oauth.oauth import OAuthRequest, OAuthSignatureMethod_HMAC_SHA1
 from django.test.utils import setup_test_environment
 from django.contrib.auth.models import User
 from vendor.xapi.lrs.objects.StatementManager import StatementManager
