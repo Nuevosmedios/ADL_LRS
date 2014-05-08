@@ -1,34 +1,39 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block title %}KME LX LRS{% endblock %}
 {% block body %}
+  <div class="container">
+  <br/>
+  <div class="page-header">
+      <h2>{% trans "Estado del LRS" %}</h2>
+  </div>
 
-  <h4>Current LRS Stats</h4>
   <div class="row">
     <div class="span2 text-center">
-    <h4>Users</h4>
+    <h4>{% trans "Usuarios" %}</h4>
     <h4>{{ stats.usercnt }}</h4>
     </div>
     <div class="span2 text-center">
-    <h4>Statements</h4>
+    <h4>{% trans "Statements" %}</h4>
     <h4>{{ stats.stmtcnt }}</h4>
     </div>
     <div class="span2 text-center">
-    <h4>Agents</h4>
+    <h4>{% trans "Agentes" %}</h4>
     <h4>{{ stats.agentcnt }}</h4>
     </div>
     <div class="span2 text-center">
-    <h4>Verbs</h4>
+    <h4>{% trans "Verbos" %}</h4>
     <h4>{{ stats.verbcnt }}</h4>
     </div>
     <div class="span2 text-center">
-    <h4>Activities</h4>
+    <h4>{% trans "Activities" %}</h4>
     <h4>{{ stats.activitycnt }}</h4>
     </div>
   </div>
 </div>
-<ul class="thumbnails">
+<!--<ul class="thumbnails">
   <li class="span4">
-    <div class="thumbnail text-center" style="padding-left:13px; padding-right:10px; height:210px">
+    <div class="thumbnail text-center" >
       <h4>Statement Validator</h4>
       <p>Want to make sure your statement is valid? Check it here.
       </p>
@@ -55,6 +60,7 @@
       <p><a class="btn" href="{% url 'vendor.xapi.lrs.views.reg_client' %}">register a client</a></p>
   </div>
   </li>
-</ul>
+</ul>-->
+</div>
 </div>
 {% endblock body %}
