@@ -140,7 +140,8 @@ def server_validate_statement_object(stmt_object, auth):
                         auth_name = auth['id'].username
                 else:
                     auth_name = None
-                if activity.authoritative != '' and activity.authoritative != auth_name:
+                is_modified = activity.activity_definition_name != stmt_object['definition']['name']
+                if is_modified and activity.authoritative != '' and activity.authoritative != auth_name:
                     err_msg = "This ActivityID already exists, and you do not have the correct authority to create or update it."
                     raise Forbidden(err_msg)
 
