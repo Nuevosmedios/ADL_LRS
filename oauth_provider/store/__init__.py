@@ -156,12 +156,11 @@ class Store(object):
         raise NotImplementedError
 
 
-def get_store(path='oauth_provider.store.db.ModelStore'):
+def get_store(path='vendor.xapi.oauth_provider.store.db.ModelStore'):
     """
     Load the oauth store. Should not be called directly unless testing.
     """
     path = getattr(settings, 'OAUTH_STORE', path)
-
     try:
         module, attr = path.rsplit('.', 1)
         store_class = getattr(importlib.import_module(module), attr)

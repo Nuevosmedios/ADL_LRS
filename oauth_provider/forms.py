@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
+from vendor.xapi.adl_lrs.settings import OAUTH_SCOPES
 
 SCOPES = (('all', 'all'),
           ('all/read', 'all/read'),
@@ -37,9 +38,9 @@ class RegisterForm(forms.Form):
         raise forms.ValidationError("Passwords did not match")
 #from .models import Token
 
-from vendor.xapi.lrs.models import Token
+from vendor.xapi.oauth_provider.models import Token
 SCOPES_LIST = []
-for p in settings.OAUTH_SCOPES:
+for p in OAUTH_SCOPES:
     SCOPES_LIST.append((p[1], p[1]))
 FORM_SCOPES = tuple(SCOPES_LIST)
 

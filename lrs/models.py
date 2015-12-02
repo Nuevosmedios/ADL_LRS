@@ -8,13 +8,13 @@ from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
 from django.utils.timezone import utc
 from .exceptions import IDNotFoundError, ParamError
-from vendor.xapi.oauth_provider.managers import TokenManager, ConsumerManager
-from vendor.xapi.oauth_provider.consts import KEY_SIZE, SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
-                   PENDING, VERIFIER_SIZE, MAX_URL_LENGTH
-
-from oauth_provider.consts import MAX_URL_LENGTH
-
-from .utils import get_lang
+#from vendor.xapi.oauth_provider.managers import TokenManager, ConsumerManager
+#from vendor.xapi.oauth_provider.consts import KEY_SIZE, SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
+#                   PENDING, VERIFIER_SIZE, MAX_URL_LENGTH
+#REPOSITORY CODE
+#from oauth_provider.consts import MAX_URL_LENGTH
+from vendor.xapi.oauth_provider.consts import MAX_URL_LENGTH
+from vendor.xapi.lrs.utils import get_lang
 
 AGENT_PROFILE_UPLOAD_TO = "agent_profile"
 ACTIVITY_STATE_UPLOAD_TO = "activity_state"

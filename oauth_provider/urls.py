@@ -1,6 +1,6 @@
 
 #from django.conf.urls import patterns, url, include -- This is before merge with ADL_LRS repository
-from oauth_provider.compat import url, patterns
+from vendor.xapi.oauth_provider.compat import url, patterns
 
 from views import request_token, user_authorization, access_token
 
