@@ -460,13 +460,13 @@ def handle_request(request, more_id=None):
     try:
         r_dict = req_parse.parse(request, more_id)
         path = request.path.lower()
-
         if path.endswith('/'):
             path = path.rstrip('/')
-
         # Cutoff more_id
         if '/xapi/statements/more' in path:
             path = '/xapi/statements/more'
+        print r_dict
+        print validators[path]
 
         req_dict = validators[path][r_dict['method']](r_dict)
         return processors[path][req_dict['method']](req_dict)
