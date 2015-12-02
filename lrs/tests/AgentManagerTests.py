@@ -6,8 +6,19 @@ import json
 import base64
 from vendor.xapi.lrs import models, views
 from vendor.xapi.lrs.objects.AgentManager import AgentManager
+import hashlib
+import json
+import base64
+
+from django.test import TestCase
 from django.core.urlresolvers import reverse
 from django.conf import settings
+#REPOSITORY CODE 
+#from ..models import Agent, Statement
+#from ..views import statements
+from vendor.xapi.lrs.models import Agent, Statement
+from vendor.xapi.lrs.views import statements
+from adl_lrs.views import register
 
 class AgentManagerTests(TestCase):
     @classmethod
@@ -15,45 +26,39 @@ class AgentManagerTests(TestCase):
         print "\n%s" % __name__
 
     def setUp(self):
-        if not settings.HTTP_AUTH_ENABLED:
-            settings.HTTP_AUTH_ENABLED = True
-        
         self.username = "tester1"
         self.email = "test1@tester.com"
         self.password = "test"
         self.auth = "Basic %s" % base64.b64encode("%s:%s" % (self.username, self.password))
         form = {"username":self.username, "email":self.email,"password":self.password,"password2":self.password}
-        response = self.client.post(reverse(views.register),form, X_Experience_API_Version="1.0.0")
-
-        if settings.HTTP_AUTH_ENABLED:
-            response = self.client.post(reverse(views.register),form, X_Experience_API_Version="1.0.0")           
+        self.client.post(reverse(register),form, X_Experience_API_Version=settings.XAPI_VERSION)           
 
     def test_agent_mbox_create(self):
         stmt = json.dumps({"actor":{"objectType": "Agent", "mbox":"mailto:bob@example.com"},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
         
         self.assertEqual(response.status_code, 200)
         st_id = json.loads(response.content)        
-        st = models.Statement.objects.get(statement_id=st_id[0])
+        st = Statement.objects.get(statement_id=st_id[0])
         bob = st.actor
         self.assertEquals(bob.objectType, "Agent")
         self.assertFalse(bob.name)
 
     def test_agent_mbox_sha1sum_create(self):
         stmt = json.dumps({"actor":{"objectType": "Agent", "mbox_sha1sum":hashlib.sha1("mailto:bob@example.com").hexdigest()},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
         
         self.assertEqual(response.status_code, 200)
         st_id = json.loads(response.content)        
-        st = models.Statement.objects.get(statement_id=st_id[0])
+        st = Statement.objects.get(statement_id=st_id[0])
         bob = st.actor
 
         self.assertEquals(bob.mbox_sha1sum, hashlib.sha1("mailto:bob@example.com").hexdigest())
@@ -61,20 +66,31 @@ class AgentManagerTests(TestCase):
         self.assertFalse(bob.name)
         self.assertFalse(bob.mbox)
 
-    def test_agent_openID_create(self):
-        stmt = json.dumps({"actor":{"objectType": "Agent", "openID":"http://bob.openID.com"},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+    def test_agent_bogus_mbox_sha1sum_create(self):
+        stmt = json.dumps({"actor":{"objectType": "Agent", "mbox_sha1sum":"notarealsum"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, "mbox_sha1sum value [notarealsum] is not a valid sha1sum")
+
+    def test_agent_openID_create(self):
+        stmt = json.dumps({"actor":{"objectType": "Agent", "openid":"http://bob.openid.com"},
+            "verb":{"id": "http://example.com/verbs/passed"},
+            "object": {'id': 'act://blah.com'}})
+
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
 
         self.assertEqual(response.status_code, 200)
         st_id = json.loads(response.content)        
-        st = models.Statement.objects.get(statement_id=st_id[0])
+        st = Statement.objects.get(statement_id=st_id[0])
         bob = st.actor
 
-        self.assertEquals(bob.openID, "http://bob.openID.com")
+        self.assertEquals(bob.openid, "http://bob.openid.com")
         self.assertEquals(bob.objectType, "Agent")
         self.assertFalse(bob.name)
         self.assertFalse(bob.mbox)
@@ -82,15 +98,15 @@ class AgentManagerTests(TestCase):
 
     def test_agent_account_create(self):
         stmt = json.dumps({"actor":{"objectType": "Agent", "account":{"homePage": "http://www.adlnet.gov", "name":"freakshow"}},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
         
         self.assertEqual(response.status_code, 200)
         st_id = json.loads(response.content)        
-        st = models.Statement.objects.get(statement_id=st_id[0])
+        st = Statement.objects.get(statement_id=st_id[0])
         bob = st.actor
 
         self.assertEquals(bob.account_name, "freakshow")
@@ -98,7 +114,7 @@ class AgentManagerTests(TestCase):
         self.assertFalse(bob.name)
         self.assertFalse(bob.mbox)
         self.assertFalse(bob.mbox_sha1sum)
-        self.assertFalse(bob.openID)
+        self.assertFalse(bob.openid)
 
     def test_agent_kwargs_basic(self):
         ot = "Agent"
@@ -126,7 +142,7 @@ class AgentManagerTests(TestCase):
     def test_agent_kwargs_basic_account(self):        
         ot = "Agent"
         name = "bob bobson"
-        account = json.dumps({"homePage":"http://www.adlnet.gov","name":"freakshow"})
+        account = {"homePage":"http://www.adlnet.gov","name":"freakshow"}
         kwargs = {"objectType":ot,"name":name,"account":account}
         bob, created = Agent.objects.retrieve_or_create(**kwargs)
         self.assertTrue(created)
@@ -162,166 +178,30 @@ class AgentManagerTests(TestCase):
         self.assertEquals(gr1.name, "my group")
         agents = Agent.objects.all()
         self.assertEquals(len(agents), 4)
-        obj_types = agents.values_list('objectType', flat=True)
         self.assertEquals(len(agents.filter(objectType='Group')), 2)
         self.assertEquals(len(agents.filter(objectType='Agent')), 2)
 
-    def test_agent_update_kwargs(self):
-        ot = "Agent"
-        name = "bill billson"
-        kwargs = {"objectType":ot, "mbox": "mailto:bill@example.com"}
-        bill, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        kwargs1 = {"objectType":ot, "mbox": "mailto:bill@example.com", "name": name}
-        bill2, created = Agent.objects.retrieve_or_create(**kwargs1)
-        
-        self.assertFalse(created)
-        self.assertEquals(bill2.name, name)
-        self.assertEquals(bill.id, bill2.id)
-        self.assertEquals(len(Agent.objects.all()), 1)
-
-    def test_agent_update_kwargs_with_account(self):
-        ot = "Agent"
-        name = "bill billson"
-        account = json.dumps({"homePage":"http://www.adlnet.gov","name":"freakshow"})
-        kwargs = {"objectType":ot,"account":account}
-        
-        bill, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        kwargs1 = {"objectType":ot, "name": name, "account":account}
-        bill2, created = Agent.objects.retrieve_or_create(**kwargs1)
-        
-        self.assertFalse(created)
-        self.assertEquals(bill2.name, name)
-        self.assertEquals(bill.id, bill2.id)
-        self.assertEquals(len(Agent.objects.all()), 1)
-
-    def test_group_update_kwargs_with_account(self):
-        ot = "Group"
-        name = "the group"
-        account = json.dumps({"homePage":"http://www.adlnet.gov","name":"freakshow-group"})
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"}]
-
-        kwargs = {"objectType":ot,"member":members, "account":account}
-        
-        g, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        kwargs1 = {"objectType":ot,"member":members, "name": name, "account":account}
-        g1, created = Agent.objects.retrieve_or_create(**kwargs1)
-        
-        self.assertFalse(created)
-        self.assertEquals(g1.name, name)
-        self.assertEquals(g.id, g1.id)
-        self.assertEquals(len(Agent.objects.all()), 3)
-        self.assertEquals(g1.account_name, "freakshow-group")
-        self.assertEquals(g.account_name, "freakshow-group")
-        self.assertEquals(g1.account_homePage, "http://www.adlnet.gov")
-        self.assertEquals(g.account_homePage, "http://www.adlnet.gov")
-
-    def test_group_update_kwargs(self):
-        ot = "Group"
-        name = "the group"
-        mbox = "mailto:the.group@example.com"
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"}]
-        kwargs = {"objectType":ot, "mbox":mbox,"member":members}
-        g, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        kwargs1 = {"objectType":ot, "name":name, "mbox":mbox,"member":members}
-        g1, created = Agent.objects.retrieve_or_create(**kwargs1)
-        self.assertFalse(created)
-
-        self.assertEquals(g1.name, name)
-        self.assertEquals(g.id, g1.id)
-        # 2 agents 1 group
-        self.assertEquals(len(Agent.objects.all()), 3)
-
-    def test_group_update_members(self):
-        ot = "Group"
-        name = "the group"
-        mbox = "mailto:the.group@example.com"
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"}]
-        kwargs = {"objectType":ot, "mbox":mbox,"member":members}
-        g, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"},
-                    {"name":"agent3","mbox":"mailto:agent3@example.com"}]
-
-        kwargs1 = {"objectType":ot, "mbox":mbox,"member":members}
-        g1, created = Agent.objects.retrieve_or_create(**kwargs1)
-        self.assertFalse(created)
-
-        ags = Agent.objects.filter(objectType='Agent')
-        mems = g1.member.all()
-        self.assertEquals(len(ags), len(mems))
-        self.assertTrue(set(ags) == set(mems))
-        self.assertEquals(g.id, g1.id)
-        # 3 agents 1 group
-        self.assertEquals(len(Agent.objects.all()), 4)
-
-    def test_group_update_members_with_account(self):
-        ot = "Group"
-        name = "the group"
-        account = json.dumps({"homePage":"http://www.adlnet.gov","name":"freakshow-group"})
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"}]
-
-        kwargs = {"objectType":ot,"member":members,"name":name ,"account":account}
-        g, created = Agent.objects.retrieve_or_create(**kwargs)
-        self.assertTrue(created)
-
-        members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
-                    {"name":"agent2","mbox":"mailto:agent2@example.com"},
-                    {"name":"agent3","mbox":"mailto:agent3@example.com"}]
-
-        kwargs1 = {"objectType":ot, "account":account,"name":name,"member":members}
-        g1, created = Agent.objects.retrieve_or_create(**kwargs1)
-        self.assertFalse(created)
-
-        ags = Agent.objects.filter(objectType='Agent')
-        mems = g1.member.all()
-        self.assertEquals(len(ags), len(mems))
-        self.assertTrue(set(ags) == set(mems))
-        self.assertEquals(g.id, g1.id)
-        # 3 agents 1 group
-        self.assertEquals(len(Agent.objects.all()), 4)
-        self.assertEquals(g1.account_name, "freakshow-group")
-        self.assertEquals(g.account_name, "freakshow-group")
-        self.assertEquals(g1.account_homePage, "http://www.adlnet.gov")
-        self.assertEquals(g.account_homePage, "http://www.adlnet.gov")
-        self.assertEquals(g1.name, "the group")
-        self.assertEquals(g.name, "the group")
-
-
     def test_agent_json_no_ids(self):
         stmt = json.dumps({"actor":{"objectType": "Agent", "name":"freakshow"},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
         
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, 'One and only one of mbox, mbox_sha1sum, openID, account, openid may be supplied with an Agent')
+        self.assertEqual(response.content, 'One and only one of mbox, mbox_sha1sum, openid, account may be supplied with an Agent')
 
     def test_agent_json_many_ids(self):
-        stmt = json.dumps({"actor":{"objectType": "Agent", "mbox":"mailto:bob@example.com", "openid":"bob.bobson.openID.org"},
-            "verb":{"id": "http://adlnet.gov/expapi/verbs/passed"},
+        stmt = json.dumps({"actor":{"objectType": "Agent", "mbox":"mailto:bob@example.com", "openid":"bob.bobson.openid.org"},
+            "verb":{"id": "http://example.com/verbs/passed"},
             "object": {'id': 'act://blah.com'}})
 
-        response = self.client.post(reverse(views.statements), stmt, content_type="application/json",
-            Authorization=self.auth, X_Experience_API_Version="1.0.0")
+        response = self.client.post(reverse(statements), stmt, content_type="application/json",
+            Authorization=self.auth, X_Experience_API_Version=settings.XAPI_VERSION)
         
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, 'One and only one of mbox, mbox_sha1sum, openID, account, openid may be supplied with an Agent')
+        self.assertEqual(response.content, 'One and only one of mbox, mbox_sha1sum, openid, account may be supplied with an Agent')
 
     def test_group(self):
         ot = "Group"
@@ -338,7 +218,7 @@ class AgentManagerTests(TestCase):
         self.assertEquals(len(mems), 2)
         self.assertIn('agent1', mems)
         self.assertIn('agent2', mems)
-        gr_dict = g.get_agent_json()
+        gr_dict = g.to_dict()
         self.assertEquals(gr_dict['objectType'],'Group')
         
         for member in gr_dict['member']:
@@ -355,7 +235,7 @@ class AgentManagerTests(TestCase):
         members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
                     {"name":"agent2","mbox":"mailto:agent2@example.com"}]
         kwargs = {"objectType":ot, "name":name, "mbox":mbox,"member":members}
-        g = AgentManager(params=kwargs).Agent
+        g = Agent.objects.retrieve_or_create(**kwargs)[0]
         self.assertEquals(g.name, name)
         self.assertEquals(g.mbox, mbox)
         mems = g.member.values_list('name', flat=True)
@@ -370,27 +250,13 @@ class AgentManagerTests(TestCase):
         members = [{"name":"agent1","mbox":"mailto:agent1@example.com"},
                     {"name":"agent2","mbox":"mailto:agent2@example.com"}]
         kwargs = {"objectType":ot, "name":name, "mbox":mbox,"member":members}
-        g = AgentManager(params=kwargs).Agent
+        g = Agent.objects.retrieve_or_create(**kwargs)[0]
         self.assertEquals(g.name, name)
         self.assertEquals(g.mbox, mbox)
         mems = g.member.values_list('name', flat=True)
         self.assertEquals(len(mems), 2)
         self.assertIn('agent1', mems)
         self.assertIn('agent2', mems)
-
-    def test_agent_del(self):
-        ag = Agent(name="the agent", account_homePage="http://adlnet.gov/agent/1",
-            account_name="agent 1 account")
-        ag.save()
-
-        self.assertEquals(ag.name, "the agent")
-        self.assertEquals(ag.account_name, "agent 1 account")
-        self.assertEquals(ag.account_homePage, "http://adlnet.gov/agent/1")
-        self.assertEquals(1, len(Agent.objects.all()))
-
-        ag.delete()
-
-        self.assertEquals(0, len(Agent.objects.all()))
 
     def test_agent_format(self):
         ot_s = "Agent"
@@ -404,12 +270,12 @@ class AgentManagerTests(TestCase):
         self.assertEquals(clark.name, name_s)
         self.assertEquals(clark.mbox, mbox_s)
 
-        clark_exact = clark.get_agent_json()
+        clark_exact = clark.to_dict()
         self.assertEquals(clark_exact['objectType'], ot_s)
         self.assertEquals(clark_exact['name'], name_s)
         self.assertEquals(clark_exact['mbox'], mbox_s)
 
-        clark_ids = clark.get_agent_json(format='ids')
+        clark_ids = clark.to_dict(format='ids')
         self.assertFalse('objectType' in str(clark_ids), "object type was found in agent json")
         self.assertFalse('name' in str(clark_ids), "name was found in agent json")
         self.assertEquals(clark_ids['mbox'], mbox_s)
@@ -425,12 +291,12 @@ class AgentManagerTests(TestCase):
         self.assertEquals(diana.name, name_ww)
         self.assertEquals(diana.mbox_sha1sum, mbox_sha1sum_ww)
 
-        diana_exact = diana.get_agent_json()
+        diana_exact = diana.to_dict()
         self.assertEquals(diana_exact['objectType'], ot_ww)
         self.assertEquals(diana_exact['name'], name_ww)
         self.assertEquals(diana_exact['mbox_sha1sum'], mbox_sha1sum_ww)
 
-        diana_ids = diana.get_agent_json(format='ids')
+        diana_ids = diana.to_dict(format='ids')
         self.assertFalse('objectType' in str(diana_ids), "object type was found in agent json")
         self.assertFalse('name' in str(diana_ids), "name was found in agent json")
         self.assertFalse('mbox' in diana_ids.items(), "mbox was found in agent json")
@@ -438,26 +304,26 @@ class AgentManagerTests(TestCase):
 
         ot_b = "Agent"
         name_b = "batman"
-        openID_b = "id:batman"
-        kwargs_b = {"objectType":ot_b,"name":name_b,"openID":openID_b}
+        openid_b = "id:batman"
+        kwargs_b = {"objectType":ot_b,"name":name_b,"openid":openid_b}
         bruce, created = Agent.objects.retrieve_or_create(**kwargs_b)
         self.assertTrue(created)
         bruce.save()
         self.assertEquals(bruce.objectType, ot_b)
         self.assertEquals(bruce.name, name_b)
-        self.assertEquals(bruce.openID, openID_b)
+        self.assertEquals(bruce.openid, openid_b)
 
-        bruce_exact = bruce.get_agent_json()
+        bruce_exact = bruce.to_dict()
         self.assertEquals(bruce_exact['objectType'], ot_b)
         self.assertEquals(bruce_exact['name'], name_b)
-        self.assertEquals(bruce_exact['openID'], openID_b)
+        self.assertEquals(bruce_exact['openid'], openid_b)
 
-        bruce_ids = bruce.get_agent_json(format='ids')
+        bruce_ids = bruce.to_dict(format='ids')
         self.assertFalse('objectType' in str(bruce_ids), "object type was found in agent json")
         self.assertFalse('name' in str(bruce_ids), "name was found in agent json")
         self.assertFalse('mbox' in str(bruce_ids), "mbox was found in agent json")
         self.assertFalse('mbox_sha1sum' in str(bruce_ids), "mbox_sha1sum was found in agent json")
-        self.assertEquals(bruce_ids['openID'], openID_b)
+        self.assertEquals(bruce_ids['openid'], openid_b)
 
         ot_f = "Agent"
         name_f = "the flash"
@@ -471,18 +337,18 @@ class AgentManagerTests(TestCase):
         self.assertEquals(barry.account_homePage, account_f['homePage'])
         self.assertEquals(barry.account_name, account_f['name'])
 
-        barry_exact = barry.get_agent_json()
+        barry_exact = barry.to_dict()
         self.assertEquals(barry_exact['objectType'], ot_f)
         self.assertEquals(barry_exact['name'], name_f)
         self.assertEquals(barry_exact['account']['homePage'], account_f['homePage'])
         self.assertEquals(barry_exact['account']['name'], account_f['name'])
 
-        barry_ids = barry.get_agent_json(format='ids')
+        barry_ids = barry.to_dict(format='ids')
         self.assertFalse('objectType' in str(barry_ids), "object type was found in agent json")
         self.assertFalse('name' in barry_ids.items(), "name was found in agent json")
         self.assertFalse('mbox' in barry_ids.items(), "mbox was found in agent json")
         self.assertFalse('mbox_sha1sum' in str(barry_ids), "mbox_sha1sum was found in agent json")
-        self.assertFalse('openID' in str(barry_ids), "openID was found in agent json")
+        self.assertFalse('openid' in str(barry_ids), "openid was found in agent json")
         self.assertEquals(barry_ids['account']['homePage'], account_f['homePage'])
         self.assertEquals(barry_ids['account']['name'], account_f['name'])
 
@@ -497,12 +363,12 @@ class AgentManagerTests(TestCase):
         self.assertEquals(justiceleague.name, name_j)
         self.assertEquals(justiceleague.mbox, mbox_j)
 
-        justiceleague_exact = justiceleague.get_agent_json()
+        justiceleague_exact = justiceleague.to_dict()
         self.assertEquals(justiceleague_exact['objectType'], ot_j)
         self.assertEquals(justiceleague_exact['name'], name_j)
         self.assertEquals(justiceleague_exact['mbox'], mbox_j)
 
-        justiceleague_ids = justiceleague.get_agent_json(format='ids')
+        justiceleague_ids = justiceleague.to_dict(format='ids')
         self.assertTrue('objectType' in str(justiceleague_ids), "object type was not found in group json")
         self.assertFalse('name' in str(justiceleague_ids), "name was found in agent json")
         self.assertEquals(justiceleague_ids['mbox'], mbox_j)
@@ -522,7 +388,7 @@ class AgentManagerTests(TestCase):
         for bg in bg_members:
             self.assertTrue(bg.name in str(kwargs_bg['member']))
 
-        badguys_exact = badguys.get_agent_json()
+        badguys_exact = badguys.to_dict()
         self.assertEquals(badguys_exact['objectType'], ot_bg)
         for m in badguys_exact['member']:
             if m['name'] == badguy_ds['name']:
@@ -534,7 +400,7 @@ class AgentManagerTests(TestCase):
             else:
                 self.fail("got an unexpected name: " % m['name'])
 
-        badguys_ids = badguys.get_agent_json(format='ids')
+        badguys_ids = badguys.to_dict(format='ids')
         self.assertTrue('objectType' in str(badguys_ids), "object type was not found in group json")
         for m in badguys_ids['member']:
             self.assertFalse('objectType' in str(m), "object type was found in member agent")

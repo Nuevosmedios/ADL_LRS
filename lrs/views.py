@@ -1,22 +1,21 @@
 import json
 import logging
+
 from django.conf import settings
-from django.contrib.auth import authenticate, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.core.context_processors import csrf
 from django.core.exceptions import ValidationError
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render_to_response
-from django.template import RequestContext
+from django.db import transaction
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.decorators import decorator_from_middleware
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_http_methods
 from vendor.xapi.lrs import forms, models, exceptions
 from vendor.xapi.lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator
 from vendor.xapi.oauth_provider.consts import ACCEPTED, CONSUMER_STATES
+from django.views.decorators.http import require_http_methods
+
+from .exceptions import BadRequest, Unauthorized, Forbidden, NotFound, Conflict, PreconditionFail, OauthUnauthorized, OauthBadRequest
+from .utils import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware
 
 logger = logging.getLogger(__name__)
  
@@ -33,49 +32,14 @@ def home(request):
     stats['activitycnt'] = models.Activity.objects.filter().count()
     return render_to_response('home.html', {'stats':stats}, context_instance=context)
 
-@decorator_from_middleware(accept_middleware.AcceptMiddleware)
-@csrf_protect
-def stmt_validator(request):
-    context = RequestContext(request)
-    context.update(csrf(request))
+# This uses the lrs logger for LRS specific information
+logger = logging.getLogger(__name__)
 
-    if request.method == 'GET':
-        form = forms.ValidatorForm()
-        return render_to_response('validator.html', {"form": form}, context_instance=context)
-    elif request.method == 'POST':
-        form = forms.ValidatorForm(request.POST)
-        if form.is_valid():
-            # Initialize validator (validates incoming data structure)
-            try:
-                validator = StatementValidator.StatementValidator(form.cleaned_data['jsondata'])
-            except SyntaxError, se:
-                return render_to_response('validator.html', {"form": form, "error_message": "Statement is not a properly formatted dictionary"},
-                context_instance=context)
-            except ValueError, ve:
-                return render_to_response('validator.html', {"form": form, "error_message": "Statement is not a properly formatted dictionary"},
-                context_instance=context)                
-            except Exception, e:
-                return render_to_response('validator.html', {"form": form, "error_message": e.message},
-                context_instance=context)
-
-            # Once know it's valid JSON, validate keys and fields
-            try:
-                valid = validator.validate()
-            except exceptions.ParamError, e:
-                return render_to_response('validator.html', {"form": form,"error_message": e.message},
-                    context_instance=context)
-            else:
-                return render_to_response('validator.html', {"form": form,"valid_message": valid},
-                    context_instance=context)
-        else:
-            return render_to_response('validator.html', {"form": form},
-                context_instance=context)
-
-@decorator_from_middleware(accept_middleware.AcceptMiddleware)
+@require_http_methods(["GET", "HEAD"])
 def about(request):
     lrs_data = { 
-        "version": ["1.0.1"],
-        "Extensions":{
+        "version": settings.XAPI_VERSIONS,
+        "extensions":{
             "xapi": {
                 "statements":
                 {
@@ -162,19 +126,7 @@ def about(request):
             }
         }
     }    
-    return HttpResponse(json.dumps(lrs_data), mimetype="application/json", status=200)
-
-def actexample(request):
-    return render_to_response('actexample.json', mimetype="application/json")
-
-def actexample2(request):
-    return render_to_response('actexample2.json', mimetype="application/json")
-
-def actexample3(request):
-    return render_to_response('actexample3.json', mimetype="application/json")
-
-def actexample4(request):
-    return render_to_response('actexample4.json', mimetype="application/json")
+    return HttpResponse(json.dumps(lrs_data), mimetype="application/json", status=200)  
 
 @csrf_protect
 @require_http_methods(["POST", "GET"])
@@ -333,21 +285,22 @@ def logout_view(request):
 # Called when user queries GET statement endpoint and returned list is larger than server limit (10)
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 @require_http_methods(["GET", "HEAD"])
+@decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 def statements_more(request, more_id):
     return handle_request(request, more_id)
 
-@require_http_methods(["PUT","GET","POST", "HEAD"])
+@require_http_methods(["PUT", "GET", "POST", "HEAD"])
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 @csrf_exempt
 def statements(request):
-    return handle_request(request)   
+    return handle_request(request)
 
 @require_http_methods(["PUT","POST","GET","DELETE", "HEAD"])
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 def activity_state(request):
     return handle_request(request)  
 
-@require_http_methods(["PUT","POST","GET","DELETE", "HEAD"])
+@require_http_methods(["PUT", "POST", "GET", "DELETE", "HEAD"])
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 def activity_profile(request):
     return handle_request(request)
@@ -357,20 +310,15 @@ def activity_profile(request):
 def activities(request):
     return handle_request(request)
 
-@require_http_methods(["PUT","POST","GET","DELETE", "HEAD"])    
+@require_http_methods(["PUT", "POST", "GET", "DELETE", "HEAD"])    
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 def agent_profile(request):
     return handle_request(request)
 
-# returns a 405 (Method Not Allowed) if not a GET
 @require_http_methods(["GET", "HEAD"])
 @decorator_from_middleware(XAPIVersionHeaderMiddleware.XAPIVersionHeader)
 def agents(request):
     return handle_request(request)
-
-@login_required
-def user_profile(request):
-    return render_to_response('registration/profile.html')
 
 validators = {
     reverse(statements).lower() : {
@@ -408,7 +356,7 @@ validators = {
        "GET" : req_validate.agents_get,
        "HEAD" : req_validate.agents_get
    },
-   "/xapi/statements/more" : {
+   "%s/%s" % (reverse(statements).lower(), "more") : {
         "GET" : req_validate.statements_more_get,
         "HEAD" : req_validate.statements_more_get
    }
@@ -450,12 +398,13 @@ processors = {
        "GET" : req_process.agents_get,
        "HEAD" : req_process.agents_get
    },
-   "/xapi/statements/more" : {
+   "%s/%s" % (reverse(statements).lower(), "more") : {
         "GET" : req_process.statements_more_get,
         "HEAD" : req_process.statements_more_get
    }      
 }
 
+@transaction.commit_on_success
 def handle_request(request, more_id=None):
     try:
         r_dict = req_parse.parse(request, more_id)
@@ -463,40 +412,50 @@ def handle_request(request, more_id=None):
         if path.endswith('/'):
             path = path.rstrip('/')
         # Cutoff more_id
+        '''
         if '/xapi/statements/more' in path:
             path = '/xapi/statements/more'
         print r_dict
-        print validators[path]
+        print validators[path]'''
+        if 'more' in path:
+            path = "%s/%s" % (reverse('lrs.views.statements').lower(), "more")
 
         req_dict = validators[path][r_dict['method']](r_dict)
         return processors[path][req_dict['method']](req_dict)
 
-    except exceptions.BadRequest as err:
+    except BadRequest as err:
         log_exception(request.path, err)
         return HttpResponse(err.message, status=400)
     except ValidationError as ve:
         log_exception(request.path, ve)
         return HttpResponse(ve.messages[0], status=400)
-    except exceptions.Unauthorized as autherr:
+    except OauthBadRequest as oauth_err:
+        log_exception(request.path, oauth_err)
+        return HttpResponse(oauth_err.message, status=400)
+    except Unauthorized as autherr:
         log_exception(request.path, autherr)
         r = HttpResponse(autherr, status = 401)
         r['WWW-Authenticate'] = 'Basic realm="KMELXAPI"'
         return r
-    except exceptions.OauthUnauthorized as oauth_err:
+    except OauthUnauthorized as oauth_err:
         log_exception(request.path, oauth_err)
-        return oauth_err.response
-    except exceptions.Forbidden as forb:
+        return HttpResponse(oauth_err.message, status=401)
+    except Forbidden as forb:
         log_exception(request.path, forb)
         return HttpResponse(forb.message, status=403)
-    except exceptions.NotFound as nf:
+    except NotFound as nf:
         log_exception(request.path, nf)
         return HttpResponse(nf.message, status=404)
-    except exceptions.Conflict as c:
+    except Conflict as c:
         log_exception(request.path, c)
         return HttpResponse(c.message, status=409)
-    except exceptions.PreconditionFail as pf:
+    except PreconditionFail as pf:
         log_exception(request.path, pf)
         return HttpResponse(pf.message, status=412)
+    # Added BadResponse for OAuth validation
+    except HttpResponseBadRequest as br:
+        log_exception(request.path, br)
+        return br
     except Exception as err:
         log_exception(request.path, err)
         return HttpResponse(err.message, status=500)
