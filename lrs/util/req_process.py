@@ -152,7 +152,7 @@ def process_complex_get(req_dict):
     # If attachments=True in req_dict then include the attachment payload and return different mime type
     if attachments:
         stmt_result, mime_type, content_length = build_response(stmt_result, content_length)
-        resp = HttpResponse(stmt_result, mimetype=mime_type, status=200)
+        resp = HttpResponse(stmt_result, content_type=mime_type, status=200)
     # Else attachments are false for the complex get so just dump the stmt_result
     else:
         if format == 'exact':
@@ -160,13 +160,13 @@ def process_complex_get(req_dict):
         else:
             result = json.dumps(stmt_result)
         content_length = len(result)
-        resp = HttpResponse(result, mimetype=mime_type, status=200)    
+        resp = HttpResponse(result, content_type=mime_type, status=200)    
     return resp, content_length
 
 def statements_post(req_dict):
     auth_id, define = get_auth(req_dict.get('auth', None))
     stmt_responses = process_statements(req_dict['body'], auth_id, define)
-    return HttpResponse(json.dumps([st for st in stmt_responses]), mimetype="application/json", status=200)
+    return HttpResponse(json.dumps([st for st in stmt_responses]), content_type="application/json", status=200)
 
 def statements_put(req_dict):
     auth_id, define = get_auth(req_dict.get('auth', None))
@@ -185,13 +185,13 @@ def statements_more_get(req_dict):
     # If there are attachments, include them in the payload
     if attachments:
         stmt_result, mime_type, content_length = build_response(stmt_result, content_length)
-        resp = HttpResponse(stmt_result, mimetype=mime_type, status=200)
+        resp = HttpResponse(stmt_result, content_type=mime_type, status=200)
     # If not, just dump the stmt_result
     else:
         if isinstance(stmt_result, basestring):
-            resp = HttpResponse(stmt_result, mimetype=mime_type, status=200)
+            resp = HttpResponse(stmt_result, content_type=mime_type, status=200)
         else:
-            resp = HttpResponse(json.dumps(stmt_result), mimetype=mime_type, status=200)
+            resp = HttpResponse(json.dumps(stmt_result), content_type=mime_type, status=200)
     
     # Add consistent header and set content-length
     try:
@@ -211,7 +211,7 @@ def statements_get(req_dict):
         
         # return the object, will already be json since format will be exact
         stmt_result = st.object_return()
-        resp = HttpResponse(stmt_result, mimetype=mime_type, status=200)
+        resp = HttpResponse(stmt_result, content_type=mime_type, status=200)
         content_length = len(stmt_result)
     # Complex GET
     else:
@@ -362,7 +362,7 @@ def activities_get(req_dict):
     activityId = req_dict['params']['activityId']
     act = models.Activity.objects.get(activity_id=activityId, canonical_version=True)    
     return_act = json.dumps(act.object_return())    
-    resp = HttpResponse(return_act, mimetype="application/json", status=200)
+    resp = HttpResponse(return_act, content_type="application/json", status=200)
     resp['Content-Length'] = str(len(return_act))
     return resp
 
@@ -417,6 +417,6 @@ def agent_profile_delete(req_dict):
 def agents_get(req_dict):
     a = models.Agent.objects.get(**req_dict['agent_ifp'])    
     agent_data = json.dumps(a.get_person_json())
-    resp = HttpResponse(agent_data, mimetype="application/json")
+    resp = HttpResponse(agent_data, content_type="application/json")
     resp['Content-Length'] = str(len(agent_data))
     return resp

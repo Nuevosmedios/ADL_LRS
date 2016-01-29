@@ -162,19 +162,19 @@ def about(request):
             }
         }
     }    
-    return HttpResponse(json.dumps(lrs_data), mimetype="application/json", status=200)
+    return HttpResponse(json.dumps(lrs_data), content_type="application/json", status=200)
 
 def actexample(request):
-    return render_to_response('actexample.json', mimetype="application/json")
+    return render_to_response('actexample.json', content_type="application/json")
 
 def actexample2(request):
-    return render_to_response('actexample2.json', mimetype="application/json")
+    return render_to_response('actexample2.json', content_type="application/json")
 
 def actexample3(request):
-    return render_to_response('actexample3.json', mimetype="application/json")
+    return render_to_response('actexample3.json', content_type="application/json")
 
 def actexample4(request):
-    return render_to_response('actexample4.json', mimetype="application/json")
+    return render_to_response('actexample4.json', content_type="application/json")
 
 @csrf_protect
 @require_http_methods(["POST", "GET"])
@@ -251,7 +251,7 @@ def my_statements(request):
     stmt_id = request.GET.get("stmt_id", None)
     if stmt_id:
         s = models.Statement.objects.get(statement_id=stmt_id, user=request.user)
-        return HttpResponse(s.object_return(),mimetype="application/json",status=200)
+        return HttpResponse(s.object_return(),content_type="application/json",status=200)
     else:
         s = {}
         paginator = Paginator(models.Statement.objects.filter(user=request.user).order_by('-timestamp').values_list('id', flat=True), 
@@ -289,7 +289,7 @@ def my_statements(request):
         if page.has_next():
             s['next'] = "%s?page=%s" % (reverse('vendor.xapi.lrs.views.my_statements'), page.next_page_number())
 
-        return HttpResponse(json.dumps(s), mimetype="application/json", status=200)
+        return HttpResponse(json.dumps(s), content_type="application/json", status=200)
 
 @login_required()
 def my_app_status(request):
@@ -301,9 +301,9 @@ def my_app_status(request):
         client.status = new_status
         client.save()
         ret = {"app_name":client.name, "status":client.get_status_display()}
-        return HttpResponse(json.dumps(ret), mimetype="application/json", status=200)
+        return HttpResponse(json.dumps(ret), content_type="application/json", status=200)
     except:
-        return HttpResponse(json.dumps({"error_message":"unable to fulfill request"}), mimetype="application/json", status=400)
+        return HttpResponse(json.dumps({"error_message":"unable to fulfill request"}), content_type="application/json", status=400)
 
 @login_required()
 @require_http_methods(["DELETE"])

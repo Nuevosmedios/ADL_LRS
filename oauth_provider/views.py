@@ -40,7 +40,7 @@ def request_token(request):
             # create a request token
             token = oauth_server.fetch_request_token(oauth_request)
             # return the token
-            response = HttpResponse(token.to_string(), mimetype="text/plain")
+            response = HttpResponse(token.to_string(), content_type="text/plain")
         except OAuthError, err:
             response = send_oauth_error(err)
         return response
@@ -170,7 +170,7 @@ def access_token(request):
         # get the request token
         token = oauth_server.fetch_access_token(oauth_request)
         # return the token
-        response = HttpResponse(token.to_string(), mimetype="text/plain")
+        response = HttpResponse(token.to_string(), content_type="text/plain")
     except OAuthError, err:
         response = send_oauth_error(err)
     return response
