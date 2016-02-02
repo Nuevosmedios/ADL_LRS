@@ -1,76 +1,105 @@
-# ADL LRS 
+﻿# ADL LRS 
 
-#### Installation tested on Ubuntu 12.10 machine with Python 2.7.3. Should be good with Ubuntu 10.04 LTS - 13.04 releases. This is still in the development stage and NOT ready for production
+#### Installation tested on Ubuntu 12.10 machine with Python 2.7.3. Should be good with Ubuntu 10.04 LTS - 12.10 releases. Updated to be compliant with the 1.0.2 xAPI spec.
+
+This version is stable, but only intended to support a small amount of users as a proof of concept. While it uses programming best practices, it is not designed to take the place of an enterprise system.
 
 ## Installation
 
-Software Installation
+**Install Prerequisites**
 
-    sudo apt-get install git fabric postgresql-9.1 python-setuptools postgresql-server-dev-9.1 python-dev libxml2-dev libxslt-dev
-    sudo easy_install pip
-    sudo pip install virtualenv
-
-Setup Postgres
-
-    sudo passwd postgres (set password for postgres system user)
-    sudo -u postgres createuser -P <db_owner> (create postgres user that will be owner of the db - make superuser)
-    su postgres
-    psql template1
+    admin:~$ sudo apt-get install git fabric postgresql python-setuptools \
+        postgresql-server-dev-all python-dev libxml2-dev libxslt-dev
+    admin:~$ sudo easy_install pip
+    admin:~$ sudo pip install virtualenv
     
-Create database inside of postgres shell
+**Setup Postgres**
 
-    CREATE DATABASE lrs OWNER <db_owner>;
-    \q (exits shell)
-    exit (logout as system postgres user)
+    admin:~$ sudo -u postgres createuser -P -s <db_owner_name>
+    Enter password for new role: <db_owner_password>
+    Enter it again: <db_owner_password>
+    admin:~$ sudo -u postgres psql template1
+    template1=# CREATE DATABASE lrs OWNER <db_owner_name>;
+    template1=# \q (exits shell)
     
-Create ADL LRS system user
+**Clone the LRS repository**
 
-    sudo useradd -c "ADL Learning Record Store System" -m -s "/bin/bash" adllrs
-    sudo passwd adllrs (set password)
-    su adllrs
-    cd ~
+    admin:~$ cd <wherever you want to put the LRS>
+    admin:~$ git clone https://github.com/adlnet/ADL_LRS.git
+    admin:~$ cd ADL_LRS/
     
-Create desired directory to keep LRS
+**Set the LRS configuration**
 
-    mkdir <dir_name>
-    cd <dir_name>
+	### File: ADL_LRS/adl_lrs/settings.py
+	
+	# configure the database
+	DATABASES = {
+    	'default': {
+    	    'ENGINE': 'django.db.backends.postgresql_psycopg2',
+	        'NAME': 'lrs',
+	        'USER': '<db_owner_name>',
+	        'PASSWORD': '<db_owner_password>',
+	        'HOST': 'localhost',
+	        'PORT': '',
+	    }
+	}
+	
+	# Make this unique, and don't share it with anybody.
+	SECRET_KEY = 'Some long random string with numb3rs and $ymbol$'
+	
+	# set to 'https' if using SSL encryption - this is just for testing purposes and won't dictate if the LRS runs over http or https
+	SITE_SCHEME = 'http'
+  
+  	# Keep as localhost if running dev or change it to your planned domain. Should be the same in /admin site (see below) - this is just for testing purposes and won't dictate the domain or port the LRS runs on
+  	SITE_DOMAIN = 'localhost:8000'
+
+**Setup the environment**
+
+    admin:ADL_LRS$ fab setup_env
+    admin:ADL_LRS$ source ../env/bin/activate
+    (env)admin:ADL_LRS$
     
-Clone the LRS repository
-
-    git clone https://github.com/adlnet/ADL_LRS.git
-    cd ADL_LRS
+This creates the top level folders, <b>logs</b> and <b>media</b> at the same level as the project folder, <b>ADL_LRS</b>. Throughout the readme and the other install guides for celery and nginx you will most likely want to direct any log files to the logs directory. Every log except for the uwsgi and nginx logs (covered later) will have the system user permissions. The other will have root permissions.
     
-Note: Under ADL_LRS/adl_lrs/settings.py, make sure the database USER and PASSWORD are the same as the db_owner created
-earlier. Also, be sure to replace the current SECRET_KEY flag with a secret string of your own, and be sure not to share it.
+**Setup the LRS**
 
-Setup the environment
+    (env)admin:ADL_LRS$ fab setup_lrs
+    ...
+    You just installed Django's auth system, which means you don't have any superusers defined.
+	Would you like to create one now? (yes/no): yes
+	Username (leave blank to use '<system_user_name>'): 
+	E-mail address:
+	Password: <this can be different than your system password since this will just be for the LRS site>
+	Password (again): 
+	Superuser created successfully.
+	...
 
-    fab setup_env
-    source ../env/bin/activate
-(To exit the virtual environment, just type `deactivate`)
-    
-Setup the LRS (creates media directories and cache tables, then syncs database)
+If you get some sort of authentication error here, make sure that Django and PostgreSQL are both
+using the same form of authentication (*adl_lrs/settings.py* and *pg_hba.conf*) and that the credentials
+given in *settings.py* are the same as those you created.
 
-    fab setup_lrs (when prompted make adllrs a Django superuser)
+<b>IMPORTANT:</b> You <b>MUST</b> setup celery for retrieving the activity metadata from the ID as well as voiding statements that might have come in out of order. Visit the [Using Celery](https://github.com/adlnet/ADL_LRS/wiki/Using-Celery) wiki page for installation instructions.
 
 ## Starting
+
 While still in the ADL_LRS directory, run
 
-    supervisord
+    (env)dbowner:ADL_LRS$ python manage.py runserver
 
-To verify it's running
+This starts a lightweight development web server on the local machine. By default, the server runs on port 8000 on the IP address 127.0.0.1. You can pass in an IP address and port number explicitly. This will serve your static files without setting up Nginx but must NOT be used for production purposes. Press `CTRL + C` to stop the server
 
-    supervisorctl
 
-You should see a task named web running. This will host the application using gunicorn with 2 worker processes.
-If you open a browser and visit http://localhost:8000/xapi you will hit the LRS. Gunicorn does not serve static files
-so no CSS will be present. This is fine if you're doing testing/development but if you want to host a production-ready
-LRS, Nginx needs to be setup to serve static files. For more production-like environments, we also recommend using uWSGI instead of Gunicorn. Please read [these](https://github.com/adlnet/ADL_LRS/wiki/Using-Nginx-for-Production) instructions for including
-Nginx and using uWSGI intead of Gunicorn. For a more detailed description of the tools being used in general, visit [here](https://github.com/adlnet/ADL_LRS/wiki/Putting-the-Pieces-Together). Additionally if you're just doing dev, instead of using supervisor you can just run `python manage.py runserver` and use Django's built-in web server.
+Set your site domain
+
+  Visit the admin section of your website (/admin). Click Sites and you'll see the only entry is 'example.com' (The key for this in the DB is 1 and it maps back to the SITE_ID value in settings). Change the domain and name to the domain you're going to use. This should be the same value as what you set SITE_DOMAIN as in the settings.py file. If running locally it could be localhost:8000, or if production could be lrs.adlnet.gov (DON'T include the scheme here, that should be set in settings.py already). Once again this does not change the domain it's running on...you want to set that up first then change this value to your domain name.
+
+Whenever you want to exit the virtual environment, just type `deactivate`
+
+For other ways to start and run the LRS, please visit our Wiki.
 
 ## Test LRS
     
-    fab test_lrs
+    (env)dbowner:ADL_LRS$ fab test_lrs
 
 ## Helpful Information
     
@@ -79,9 +108,10 @@ Nginx and using uWSGI intead of Gunicorn. For a more detailed description of the
 * [Sending Attachments](https://github.com/adlnet/ADL_LRS/wiki/Sending-Statements-with-Attachments)
 * [Setting up Nginx and uWSGI](https://github.com/adlnet/ADL_LRS/wiki/Using-Nginx-for-Production)
 * [OAuth Help](https://github.com/adlnet/ADL_LRS/wiki/Using-OAuth)
+* [Clearing the Database](https://github.com/adlnet/ADL_LRS/wiki/Clearing-the-Database)
 
 ## License
-   Copyright 2012 Advanced Distributed Learning
+   Copyright &copy;2015 Advanced Distributed Learning
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

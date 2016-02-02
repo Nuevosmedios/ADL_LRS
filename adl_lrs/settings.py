@@ -1,9 +1,10 @@
 # Django settings for adl_lrs project.
-from unipath import Path
+from os import path
+from os.path import dirname, abspath
 
 # Root of LRS
-SETTINGS_PATH = Path(__file__)
-PROJECT_ROOT = SETTINGS_PATH.ancestor(3)
+SETTINGS_DIR = dirname(abspath(__file__))
+PROJECT_ROOT = dirname(dirname(SETTINGS_DIR))
 
 # If you want to debug
 DEBUG = True
@@ -42,7 +43,8 @@ LANGUAGE_CODE = 'en-US'
 # This is used so that application data can hook into specific sites and a single database can manage
 # content for multiple sites.
 SITE_ID = 1
-
+SITE_SCHEME = 'http'
+SITE_DOMAIN = 'localhost:8000'
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
@@ -56,12 +58,17 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = PROJECT_ROOT.child('media')
+MEDIA_ROOT = path.join(PROJECT_ROOT, 'media')
+# Paths for xapi media
+AGENT_PROFILE_UPLOAD_TO = "agent_profile"
+ACTIVITY_STATE_UPLOAD_TO = "activity_state"
+ACTIVITY_PROFILE_UPLOAD_TO = "activity_profile"
+STATEMENT_ATTACHMENT_UPLOAD_TO = "attachment_payloads"
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/media/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -80,28 +87,61 @@ STATICFILES_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
+# Current xAPI version
+XAPI_VERSION = '1.0.2'
+
+XAPI_VERSIONS = ['1.0.0', '1.0.1', '1.0.2']
+
 # Where to be redirected after logging in
-LOGIN_REDIRECT_URL = '/XAPI/me'
+LOGIN_REDIRECT_URL = '/me'
 
 # Me view has a tab of user's statements
 STMTS_PER_PAGE = 10
 
 # Whether HTTP auth or OAuth is enabled
-HTTP_AUTH_ENABLED = True
-OAUTH_ENABLED = False
+ALLOW_EMPTY_HTTP_AUTH = False
+OAUTH_ENABLED = True
 
-# OAuth callback views
+# OAuth1 callback views
 OAUTH_AUTHORIZE_VIEW = 'oauth_provider.views.authorize_client'
 OAUTH_CALLBACK_VIEW = 'oauth_provider.views.callback_view'
 OAUTH_SIGNATURE_METHODS = ['plaintext','hmac-sha1','rsa-sha1']
-OAUTH_REALM_KEY_NAME = 'http://localhost:8000/XAPI'
+OAUTH_REALM_KEY_NAME = '%s://%s/xAPI' % (SITE_SCHEME, SITE_DOMAIN)
+
+# THIS IS OAUTH2 STUFF
+STATE = 1
+PROFILE = 1 << 1
+DEFINE = 1 << 2
+STATEMENTS_READ_MINE = 1 << 3
+STATEMENTS_READ = 1 << 4
+STATEMENTS_WRITE = 1 << 5
+ALL_READ = 1 << 6
+ALL = 1 << 7
+
+# List STATEMENTS_WRITE and STATEMENTS_READ_MINE first so they get defaulted in oauth2/forms.py
+OAUTH_SCOPES = (
+        (STATEMENTS_WRITE,'statements/write'),
+        (STATEMENTS_READ_MINE,'statements/read/mine'),
+        (STATEMENTS_READ,'statements/read'),
+        (STATE,'state'),
+        (DEFINE,'define'),
+        (PROFILE,'profile'),
+        (ALL_READ,'all/read'),
+        (ALL,'all')
+    )
+
+SESSION_KEY = 'oauth2'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 
 # Limit on number of statements the server will return
 SERVER_STMT_LIMIT = 100
-
+# Fifteen second timeout to all celery tasks
+CELERYD_TASK_SOFT_TIME_LIMIT = 15
 # ActivityID resolve timeout (seconds)
 ACTIVITY_ID_RESOLVE_TIMEOUT = .2
-
 # Caches for /more endpoint and attachments
 CACHES = {
     'default': {
@@ -112,6 +152,7 @@ CACHES = {
     'attachment_cache':{
         'BACKEND':'django.core.cache.backends.db.DatabaseCache',
         'LOCATION':'attachment_cache',
+        'TIMEOUT': 86400,        
     },
 }
 
@@ -133,6 +174,7 @@ TEMPLATE_LOADERS = (
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.request",
     "django.core.context_processors.debug",
     "django.core.context_processors.i18n",
     "django.core.context_processors.media",
@@ -141,13 +183,12 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.messages.context_processors.messages"
 )
 
-
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'lrs.util.AllowOriginMiddleware.AllowOriginMiddleware',
+    'adl_lrs.utils.AllowOriginMiddleware.AllowOriginMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -171,18 +212,28 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'adl_lrs',
     'lrs',
-    'gunicorn',
     'oauth_provider',
+    'oauth2_provider.provider',
+    'oauth2_provider.provider.oauth2',
     'django.contrib.admin',
-    'django_extensions'
+    'django_extensions',
+    'jsonify',
+    'south',
+    'endless_pagination',
 )
 
-REQUEST_HANDLER_LOG_DIR = SETTINGS_PATH.ancestor(3) + '/logs/lrs.log'
-DEFAULT_LOG_DIR = SETTINGS_PATH.ancestor(3) + '/logs/django_request.log'
+REQUEST_HANDLER_LOG_DIR = path.join(PROJECT_ROOT, 'logs/django_request.log')
+DEFAULT_LOG_DIR = path.join(PROJECT_ROOT, 'logs/lrs.log')
+CELERY_TASKS_LOG_DIR =  path.join(PROJECT_ROOT, 'logs/celery_tasks.log')
+
+CELERYD_HIJACK_ROOT_LOGGER = False
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
+# lrs logger is used in views.py for LRS specific logging
+# django.request logger logs warning and error server requests
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -214,6 +265,14 @@ LOGGING = {
                 'backupCount': 5,
                 'formatter':'standard',
         },
+        'celery_handler': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': CELERY_TASKS_LOG_DIR,
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },        
     },
     'loggers': {
         'lrs': {
@@ -223,8 +282,13 @@ LOGGING = {
         },
         'django.request': {
             'handlers': ['request_handler'],
-            'level': 'DEBUG',
-            'propagate': False
+            'level': 'WARNING',
+            'propagate': True
         },
+        'celery-task': {
+            'handlers': ['celery_handler'],
+            'level': 'DEBUG',
+            'propagate': True
+        },   
     }
 }
