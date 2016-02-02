@@ -7,11 +7,11 @@ import oauth2 as oauth
 from Crypto.PublicKey import RSA
 from django.db import models
 
-from oauth_provider.compat import AUTH_USER_MODEL, get_random_string
-from oauth_provider.managers import TokenManager
-from oauth_provider.consts import KEY_SIZE, RSA_SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
+from vendor.xapi.oauth_provider.compat import AUTH_USER_MODEL, get_random_string
+from vendor.xapi.oauth_provider.managers import TokenManager
+from vendor.xapi.oauth_provider.consts import KEY_SIZE, RSA_SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
     PENDING, VERIFIER_SIZE, MAX_URL_LENGTH, OUT_OF_BAND, REGULAR_SECRET_SIZE
-from oauth_provider.utils import check_valid_callback
+from vendor.xapi.oauth_provider.utils import check_valid_callback
 
 
 class Nonce(models.Model):

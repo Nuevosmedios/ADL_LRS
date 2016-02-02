@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.utils.timezone import utc
 from vendor.xapi.lrs import models
 from vendor.xapi.lrs.exceptions import IDNotFoundError, ParamError
-from vendor.xapi.lrs.util import etag, get_user_from_auth, uri
 
 from ..models import ActivityProfile
 from ..exceptions import IDNotFoundError, ParamError

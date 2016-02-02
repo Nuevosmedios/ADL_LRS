@@ -9,8 +9,8 @@ from django.contrib.auth.models import User
 from ..exceptions import Unauthorized, BadRequest, Forbidden
 from ..models import Agent
 
-from oauth_provider.models import Consumer
-from oauth2_provider.provider.oauth2.models import Client
+from vendor.xapi.oauth_provider.models import Consumer
+from vendor.xapi.oauth2_provider.provider.oauth2.models import Client
 
 # A decorator, that can be used to authenticate some requests at the site.
 def auth(func):

@@ -1,10 +1,9 @@
 import oauth2 as oauth
+from vendor.xapi.adl_lrs import settings
+from vendor.xapi.oauth_provider.compat import now
 
-from django.conf import settings
-from oauth_provider.compat import now
-
-from oauth_provider.store import InvalidConsumerError, InvalidTokenError, Store
-from oauth_provider.models import Nonce, Token, Consumer, VERIFIER_SIZE
+from vendor.xapi.oauth_provider.store import InvalidConsumerError, InvalidTokenError, Store
+from vendor.xapi.oauth_provider.models import Nonce, Token, Consumer, VERIFIER_SIZE
 
 NONCE_VALID_PERIOD = getattr(settings, "OAUTH_NONCE_VALID_PERIOD", None)
 SCOPES = [x[1] for x in settings.OAUTH_SCOPES]

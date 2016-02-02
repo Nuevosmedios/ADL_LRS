@@ -9,16 +9,15 @@ from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
 from django.utils.timezone import utc
 from .exceptions import IDNotFoundError, ParamError
-from vendor.xapi.oauth_provider.managers import TokenManager, ConsumerManager
-from vendor.xapi.oauth_provider.consts import KEY_SIZE, SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
-                   PENDING, VERIFIER_SIZE, MAX_URL_LENGTH
+from vendor.xapi.oauth_provider.managers import TokenManager #ConsumerManager - was removed 02-02-2016
+from vendor.xapi.oauth_provider.consts import KEY_SIZE,  CONSUMER_KEY_SIZE, CONSUMER_STATES, PENDING, VERIFIER_SIZE, MAX_URL_LENGTH #SECRET_SIZE was remove on 02-02-2016
 
 ADL_LRS_STRING_KEY = 'ADL_LRS_STRING_KEY'
 
 gen_pwd = User.objects.make_random_password
 generate_random = User.objects.make_random_password
 
-from oauth_provider.consts import MAX_URL_LENGTH
+#from oauth_provider.consts import MAX_URL_LENGTH was remove by conflict on 02-02-2016
 
 from .utils import get_lang
 

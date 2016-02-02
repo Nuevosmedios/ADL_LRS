@@ -9,13 +9,17 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.utils.decorators import decorator_from_middleware
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_http_methods
-from vendor.xapi.lrs import forms, models, exceptions
-from vendor.xapi.lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator
+from vendor.xapi.lrs import models, exceptions #forms was remove on 02-02-2016
+#from vendor.xapi.lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator was remove on 02-02-2016
 from vendor.xapi.oauth_provider.consts import ACCEPTED, CONSUMER_STATES
-
+from django.contrib.auth.decorators import login_required
+from django.template import RequestContext
+from django.core.context_processors import csrf
+from lms.models import User
+from vendor.xapi.lrs.utils import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware
+from django.shortcuts import render_to_response
 logger = logging.getLogger(__name__)
- 
-@decorator_from_middleware(accept_middleware.AcceptMiddleware)
+#@decorator_from_middleware(accept_middleware.AcceptMiddleware) was remove on 02-02-2016
 @csrf_protect
 def home(request):
     context = RequestContext(request)
@@ -34,7 +38,6 @@ from .utils import req_validate, req_parse, req_process, XAPIVersionHeaderMiddle
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
-
 @require_http_methods(["GET", "HEAD"])
 def about(request):
     lrs_data = { 
@@ -170,6 +173,7 @@ def register(request):
             return render_to_response('reg_success.html', d, context_instance=context)
         else:
             return render_to_response('register.html', {"form": form}, context_instance=context)
+
 
 @login_required()
 @require_http_methods(["POST", "GET"])

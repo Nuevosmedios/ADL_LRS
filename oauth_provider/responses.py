@@ -4,7 +4,7 @@ from django.http import HttpResponseBadRequest
 
 import oauth2 as oauth
 
-from oauth_provider.utils import send_oauth_error
+from vendor.xapi.oauth_provider.utils import send_oauth_error
 
 INVALID_PARAMS_RESPONSE = send_oauth_error(oauth.Error(_('Invalid request parameters.')))
 INVALID_CONSUMER_RESPONSE = HttpResponseBadRequest('Invalid Consumer.')

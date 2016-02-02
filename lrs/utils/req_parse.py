@@ -14,10 +14,10 @@ from etag import get_etag_info
 from jws import JWS, JWSException
 from ..exceptions import OauthUnauthorized, OauthBadRequest, ParamError, BadRequest
 
-from oauth_provider.utils import get_oauth_request, require_params
-from oauth_provider.decorators import CheckOauth
-from oauth_provider.store import store
-from oauth2_provider.provider.oauth2.models import AccessToken
+from vendor.xapi.oauth_provider.utils import get_oauth_request, require_params
+from vendor.xapi.oauth_provider.decorators import CheckOauth
+from vendor.xapi.oauth_provider.store import store
+from vendor.xapi.oauth2_provider.provider.oauth2.models import AccessToken
 
 att_cache = get_cache('attachment_cache')  
 

@@ -2,8 +2,9 @@ from django.conf.urls import patterns, include, url
 from django.views.generic import RedirectView
 
 urlpatterns = patterns('vendor.xapi.lrs.views',
+
     url(r'^$', 'home'),
-    url(r'^$', RedirectView.as_view(url='/')),
+    #url(r'^$', RedirectView.as_view(url='/')),
     url(r'^statements/more/(?P<more_id>.{32})$', 'statements_more'),
     url(r'^statements/more', 'statements_more_placeholder'),
     url(r'^statements', 'statements'),
@@ -25,11 +26,11 @@ urlpatterns = patterns('vendor.xapi.lrs.views',
     url(r'^me/tokens/', 'delete_token'),
     url(r'^me/', 'me'),
     url(r'^about', 'about'),
-    url(r'^statementvalidator', 'stmt_validator')
+    #url(r'^statementvalidator', 'stmt_validator')
 )
 urlpatterns += patterns('',
   url(r'^accounts/login/$', 'django.contrib.auth.views.login', name="login"),
   url(r'^accounts/logout/$', 'vendor.xapi.lrs.views.logout_view', name="logout"),
     url(r'^about', 'about'),
-    url(r'^OAuth/', include('oauth_provider.urls', namespace='oauth')),
+    url(r'^OAuth/', include('vendor.xapi.oauth_provider.urls', namespace='oauth')),
 )

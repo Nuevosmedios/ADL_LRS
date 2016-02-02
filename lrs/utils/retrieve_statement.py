@@ -12,8 +12,6 @@ from django.db.models import Q
 from itertools import chain
 from vendor.xapi.lrs.models import Statement, IDNotFoundError
 from vendor.xapi.lrs.objects.AgentManager import AgentManager
-from vendor.xapi.lrs.util import convert_to_utc, convert_to_dict
-from vendor.xapi.lrs.exceptions import NotFound
 
 from . import convert_to_utc
 from ..models import Statement, Agent

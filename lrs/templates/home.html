@@ -56,7 +56,9 @@
       <h4>Statement Validator</h4>
       <p>Want to make sure your statement is valid? Check it here.
       </p>
-      <p><a class="btn" href="{% url 'vendor.xapi.lrs.views.stmt_validator'%}">go to validator</a></p>
+      {% comment %}
+      <p><a class="btn hidden" href="{% url 'vendor.xapi.lrs.views.stmt_validator'%}">go to validator</a></p>
+      {% endcomment %}
     </div>
   </li>
 </ul>
@@ -90,7 +92,7 @@ function loadStatements(){
           url: "{% url 'home' %}xapi/statements/?limit=25&format=exact",
           type: "GET",
           async: false,
-          headers: {"X-Experience-API-Version": "1.0.0" ,"Authorization": "Basic {{request.session.auth_data}}"},
+          headers: {"X-Experience-API-Version": "1.0.0" ,"Authorization": "{{request.session.auth_data}}"},
           success: function(response){
             RenderStatements(response);
           }

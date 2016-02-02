@@ -1,6 +1,6 @@
 import re
 import urllib
-from django.conf import settings
+from vendor.xapi.adl_lrs import settings
 from django.http import HttpResponseBadRequest
 
 class XAPIVersionHeader(object):

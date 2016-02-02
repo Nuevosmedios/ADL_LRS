@@ -1,10 +1,10 @@
 from itertools import chain
 from django import forms
-from django.conf import settings
+from vendor.xapi.adl_lrs import settings
 from django.utils.encoding import force_unicode
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
-from vendor.xapi.lrs.models import Token
+from .models import Token
 
 SCOPES = (('all', 'all'),
           ('all/read', 'all/read'),

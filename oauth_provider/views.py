@@ -11,14 +11,14 @@ from django.utils.translation import ugettext as _
 from django.core.urlresolvers import get_callable
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from oauth_provider.forms import AuthorizeRequestTokenForm
-from oauth_provider.compat import UnsafeRedirect
+from ..oauth_provider.forms import AuthorizeRequestTokenForm
+from ..oauth_provider.compat import UnsafeRedirect
 from store import store, InvalidConsumerError, InvalidTokenError
 from utils import verify_oauth_request, get_oauth_request, require_params, send_oauth_error
 from utils import is_xauth_request
 from consts import OUT_OF_BAND
-from vendor.xapi.lrs.forms import AuthClientForm
-from vendor.xapi.lrs.models import Token
+#from vendor.xapi.lrs.forms import AuthClientForms was remove on 02-02-2016
+from models import Token
 #from models import Token - Original line
 
 OAUTH_AUTHORIZE_VIEW = 'OAUTH_AUTHORIZE_VIEW'
