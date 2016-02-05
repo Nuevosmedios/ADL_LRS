@@ -29,7 +29,7 @@ class ActivityStateManager():
     def __get_agent(self):
         return AgentManager(self.agent).Agent
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def post(self):
         agent = self.__get_agent()
         post_state = self.state
@@ -59,7 +59,7 @@ class ActivityStateManager():
 
         p.save()
         
-    @transaction.commit_on_success
+    @transaction.atomic
     def put(self):
         agent = self.__get_agent()
         if self.registration:

@@ -10,7 +10,7 @@ from vendor.xapi.lrs.exceptions import IDNotFoundError, ParamError
 from vendor.xapi.lrs.util import etag, get_user_from_auth, uri
 
 class ActivityProfileManager():
-    @transaction.commit_on_success
+    @transaction.atomic
     def post_profile(self, request_dict):
         post_profile = request_dict['profile']
         
@@ -44,7 +44,7 @@ class ActivityProfileManager():
 
         p.save()
 
-    @transaction.commit_on_success
+    @transaction.atomic
 	#Save profile to desired activity
     def put_profile(self, request_dict):
         #Parse out profile from request_dict

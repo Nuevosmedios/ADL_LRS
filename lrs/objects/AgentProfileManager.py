@@ -14,7 +14,7 @@ class AgentProfileManager():
     def __init__(self, agent):
     	self.Agent = agent
 
-    @transaction.commit_on_success        
+    @transaction.atomic        
     def post_profile(self, request_dict):
         post_profile = request_dict['profile']
         profile_id = request_dict['params']['profileId']
@@ -44,7 +44,7 @@ class AgentProfileManager():
 
         p.save()
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def put_profile(self, request_dict):
         profile_id = request_dict['params']['profileId']
         p,created = AgentProfile.objects.get_or_create(profileId=profile_id,agent=self.Agent)
