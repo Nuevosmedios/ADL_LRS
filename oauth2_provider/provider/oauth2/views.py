@@ -15,7 +15,7 @@ class Capture(Capture):
     Implementation of :class:`provider.views.Capture`.
     """
     def get_redirect_url(self, request):
-        return reverse('oauth2:authorize')
+        return reverse('authorize')
 
 
 class Authorize(Authorize):
@@ -35,7 +35,7 @@ class Authorize(Authorize):
             return None
 
     def get_redirect_url(self, request):
-        return reverse('oauth2:redirect')
+        return reverse('redirect')
 
     def save_authorization(self, request, client, form, client_data):
         grant = form.save(commit=False)

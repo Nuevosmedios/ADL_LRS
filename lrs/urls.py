@@ -33,4 +33,6 @@ urlpatterns += patterns('',
   url(r'^accounts/logout/$', 'vendor.xapi.lrs.views.logout_view', name="logout"),
     url(r'^about', 'about'),
     url(r'^OAuth/', include('vendor.xapi.oauth_provider.urls', namespace='oauth')),
+
+    url(r'^oauth2/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 )

@@ -204,7 +204,6 @@ class Authorize(OAuthView, Mixin):
         :return: ``tuple`` - ``(client or False, data or error)``
         """
         client = self.get_client(data.get('client_id'))
-
         if client is None:
             raise OAuthError({
                 'error': 'unauthorized_client',

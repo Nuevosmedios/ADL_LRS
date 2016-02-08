@@ -19,6 +19,7 @@ def auth(func):
         # Note: The cases involving OAUTH_ENABLED are here if OAUTH_ENABLED is switched from true to false
         # after a client has performed the handshake. (Not likely to happen, but could) 
         auth_type = request['auth']['type']
+        print request["auth"]
         # There is an http auth_type request
         if auth_type == 'http':
             http_auth_helper(request)
