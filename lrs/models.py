@@ -299,7 +299,7 @@ class Agent(models.Model):
     mbox_sha1sum = models.CharField(max_length=40, db_index=True, null=True)
     openID = models.CharField(max_length=MAX_URL_LENGTH, db_index=True, null=True)
     oauth_identifier = models.CharField(max_length=192, db_index=True, null=True)
-    member = models.ManyToManyField('self', related_name="agents", null=True)
+    member = models.ManyToManyField('self', related_name="agents")
     canonical_version = models.BooleanField(default=True)
     account_homePage = models.CharField(max_length=MAX_URL_LENGTH, null=True)
     account_name = models.CharField(max_length=50, null=True)

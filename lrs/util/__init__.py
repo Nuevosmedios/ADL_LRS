@@ -5,7 +5,8 @@ import urllib
 import urlparse
 from django.contrib.auth.models import User
 from django.core.cache import get_cache
-from django.db.models import get_models, get_app
+#from django.db.models import get_models, get_app
+from django.apps import apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 from dateutil import parser
@@ -76,8 +77,8 @@ def validate_uuid(uuid):
 
 def autoregister(*app_list):
     for app_name in app_list:
-        app_models = get_app(app_name)
-        for model in get_models(app_models):
+        app_models = apps.get_app_config(app_name)
+        for model in app_models.models.values():
             try:
                 admin.site.register(model)
             except AlreadyRegistered:
