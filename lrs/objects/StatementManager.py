@@ -3,7 +3,7 @@ import re
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.core.files.base import ContentFile
-from django.core.cache import get_cache
+from vendor.xapi.lrs.util.utils import get_cache
 from functools import wraps
 from isodate.isoduration import parse_duration
 from isodate.isoerror import ISO8601Error

@@ -4,7 +4,7 @@ from datetime import datetime
 from functools import wraps
 from django.utils.timezone import utc
 from django.conf import settings
-from django.core.cache import get_cache
+from vendor.xapi.lrs.util.utils import get_cache
 from vendor.xapi.lrs import models
 from vendor.xapi.lrs.util import uri, StatementValidator, validate_uuid, convert_to_dict, get_agent_ifp
 from vendor.xapi.lrs.exceptions import ParamConflict, ParamError, Forbidden, NotFound, BadRequest, IDNotFoundError

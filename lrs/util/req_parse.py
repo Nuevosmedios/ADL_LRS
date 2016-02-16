@@ -5,7 +5,7 @@ import urllib
 from collections import defaultdict
 from django.http import multipartparser
 from django.utils.translation import ugettext as _
-from django.core.cache import get_cache
+from vendor.xapi.lrs.util.utils import get_cache
 from vendor.xapi.lrs.util import etag, convert_to_dict, convert_post_body_to_dict
 from vendor.xapi.lrs.util.jws import JWS, JWSException
 from vendor.xapi.lrs.exceptions import OauthUnauthorized, ParamError, BadRequest
