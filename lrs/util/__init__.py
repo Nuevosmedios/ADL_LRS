@@ -4,7 +4,7 @@ import re
 import urllib
 import urlparse
 from django.contrib.auth.models import User
-from django.core.cache import get_cache
+#from django.core.cache import get_cache
 #from django.db.models import get_models, get_app
 from django.apps import apps
 from django.contrib import admin

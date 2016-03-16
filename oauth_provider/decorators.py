@@ -59,7 +59,7 @@ class CheckOAuth(object):
         is_in = lambda l: all((p in l) for p in OAUTH_PARAMETERS_NAMES)
         # lou w = all auth params will be in Authorization or HTTP_AUTHORIZATION
         auth_params = request.META.get("HTTP_AUTHORIZATION", request.META.get("Authorization", []))
-        return is_in(auth_params) or is_in(request.REQUEST)
+        return is_in(auth_params) or is_in(request.GET or request.POST)
 
     @staticmethod
     def validate_token(request):

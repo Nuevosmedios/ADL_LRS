@@ -33,7 +33,7 @@ def initialize_server_request(request):
             or request.META.get('SERVER_NAME') == 'testserver'):
         # lou -w -When POST statement data, the actual data is a dict key and has a value of ''
         # have to parse it out correctly...
-        p = dict(request.REQUEST.items()) 
+        p = dict(request.GET.items() or request.POST.items()) 
         if p.values()[0] == '':
             # literal eval is putting them in differnt order
             parameters = ast.literal_eval(p.keys()[0])
