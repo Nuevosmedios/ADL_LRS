@@ -10,6 +10,7 @@ from django.db import models
 from django.db import transaction
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.deconstruct import deconstructible
 from django.core.exceptions import ValidationError
 from django.utils.timezone import utc
 from .exceptions import IDNotFoundError, ParamError
@@ -19,8 +20,6 @@ from vendor.xapi.oauth_provider.consts import KEY_SIZE, SECRET_SIZE, CONSUMER_KE
 
 ADL_LRS_STRING_KEY = 'ADL_LRS_STRING_KEY'
 
-gen_pwd = User.objects.make_random_password
-generate_random = User.objects.make_random_password
 
 class Nonce(models.Model):
     token_key = models.CharField(max_length=KEY_SIZE)
@@ -29,7 +28,7 @@ class Nonce(models.Model):
     
     def __unicode__(self):
         return u"Nonce %s for %s" % (self.key, self.consumer_key)
-
+@deconstructible
 class Consumer(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
@@ -37,7 +36,7 @@ class Consumer(models.Model):
     default_scopes = models.CharField(max_length=100, default="statements/write,statements/read/mine")
     
     key = UUIDField(version=1)
-    secret = models.CharField(max_length=SECRET_SIZE, default=gen_pwd)
+    secret = models.CharField(max_length=SECRET_SIZE, default=User.objects.make_random_password())
 
     status = models.SmallIntegerField(choices=CONSUMER_STATES, default=PENDING)
     user = models.ForeignKey(User, null=True, blank=True, related_name="consumer_user", db_index=True)
@@ -52,16 +51,16 @@ class Consumer(models.Model):
         Used to generate random key/secret pairings.
         Use this after you've added the other data in place of save().
         """
-        key = generate_random(length=KEY_SIZE)
-        secret = generate_random(length=SECRET_SIZE)
+        key = User.objects.make_random_password(length=KEY_SIZE)
+        secret = User.objects.make_random_password(length=SECRET_SIZE)
         while Consumer.objects.filter(models.Q(key__exact=key) | models.Q(secret__exact=secret)).count():
-            key = generate_random(length=KEY_SIZE)
-            secret = generate_random(length=SECRET_SIZE)
+            key = User.objects.make_random_password(length=KEY_SIZE)
+            secret = User.objects.make_random_password(length=SECRET_SIZE)
         self.key = key
         self.secret = secret
         self.save()
 
-
+@deconstructible
 class Token(models.Model):
     REQUEST = 1
     ACCESS = 2
@@ -117,11 +116,11 @@ class Token(models.Model):
         Used to generate random key/secret pairings. 
         Use this after you've added the other data in place of save(). 
         """
-        key = generate_random(length=KEY_SIZE)
-        secret = generate_random(length=SECRET_SIZE)
+        key = User.objects.make_random_password(length=KEY_SIZE)
+        secret = User.objects.make_random_password(length=SECRET_SIZE)
         while Token.objects.filter(models.Q(key__exact=key) | models.Q(secret__exact=secret)).count():
-            key = generate_random(length=KEY_SIZE)
-            secret = generate_random(length=SECRET_SIZE)
+            key = User.objects.make_random_password(length=KEY_SIZE)
+            secret = User.objects.make_random_password(length=SECRET_SIZE)
         self.key = key
         self.secret = secret
         self.save()
@@ -601,8 +600,7 @@ class SubStatement(models.Model):
     result_score_min = models.FloatField(blank=True, null=True)
     result_score_max = models.FloatField(blank=True, null=True)
     result_extensions = JSONField(blank=True)
-    timestamp = models.DateTimeField(blank=True,null=True,
-        default=lambda: datetime.utcnow().replace(tzinfo=utc).isoformat())
+    timestamp = models.DateTimeField(null=True)
     context_registration = models.CharField(max_length=40, blank=True, db_index=True)
     context_instructor = models.ForeignKey(Agent,blank=True, null=True, on_delete=models.SET_NULL,
         db_index=True, related_name='substatement_context_instructor')

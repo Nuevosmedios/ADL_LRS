@@ -3,8 +3,8 @@ from urlparse import urlparse
 from oauth.oauth import OAuthDataStore, OAuthError, escape
 
 from django.conf import settings
-
-from vendor.xapi.lrs.models import Nonce, Token, Consumer, generate_random
+from django.contrib.auth.models import User
+from vendor.xapi.lrs.models import Nonce, Token, Consumer
 from consts import VERIFIER_SIZE, MAX_URL_LENGTH, OUT_OF_BAND
 
 OAUTH_BLACKLISTED_HOSTNAMES = getattr(settings, 'OAUTH_BLACKLISTED_HOSTNAMES', [])
@@ -123,7 +123,7 @@ class DataStore(OAuthDataStore):
             self.request_token.save()
             # OAuth 1.0a: if there is a callback confirmed, we must set a verifier
             if self.request_token.callback_confirmed:
-                self.request_token.verifier = generate_random(VERIFIER_SIZE)
+                self.request_token.verifier =  User.objects.make_random_password(VERIFIER_SIZE)
             
             self.request_token.user = user
             self.request_token.save()
